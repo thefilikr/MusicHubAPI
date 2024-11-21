@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -37,6 +38,29 @@ func LoadConfig(filePath string) (*Config, error) {
 	}
 
 	return &config, nil
+
+}
+
+const (
+	envLocal = "local"
+	envProd  = "prod"
+)
+
+func setupLogger(env string) *slog.Logger {
+	var log *slog.Logger
+
+	switch env {
+	case envLocal:
+		log = slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	}
+
+	return log
 }
 
 func main() {
@@ -46,6 +70,9 @@ func main() {
 	fmt.Println(config)
 
 	// TODO логер
+
+	log := setupLogger(config.Env)
+	log.Info("Setup Logger")
 
 	// TODO connect db
 
