@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -95,15 +96,35 @@ func setupDB(config ConfigDB) *sql.DB {
 type Song struct {
 	Group       string    `json:"group"`
 	Song        string    `json:"song"`
-	ReleaseDate time.Time `json:"release_date"`
-	Text        []string  `json:"text"`
-	Link        string    `json:"link"`
+	ReleaseDate time.Time `json:"release_date,omitempty"`
+	Text        []string  `json:"text,omitempty"`
+	Link        string    `json:"link,omitempty"`
 }
 
 func GetSong(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateSong(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var newSong Song
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&newSong); err != nil {
+		http.Error(w, "Incorrect JSON", http.StatusBadRequest)
+		return
+	}
+
+	if newSong.Group == "" || newSong.Song == "" {
+		http.Error(w, "Required fields are missing: Group or Song", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	response := map[string]string{"message": "The song was created successfully"}
+	json.NewEncoder(w).Encode(response)
 }
 
 func EditSong(w http.ResponseWriter, r *http.Request) {
