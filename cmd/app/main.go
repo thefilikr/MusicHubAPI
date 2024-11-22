@@ -2,8 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"database/sql"
+
+	_ "github.com/lib/pq"
 
 	"gopkg.in/yaml.v2"
 )
@@ -20,9 +29,11 @@ type ConfigApp struct {
 }
 
 type ConfigDB struct {
-	PortDB   uint   `yaml:"port_db"`
+	Host     string `yaml:"host"`
+	Port     uint   `yaml:"port_db"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+	NameDB   string `yaml:"name_db"`
 }
 
 func LoadConfig(filePath string) (*Config, error) {
@@ -63,18 +74,81 @@ func setupLogger(env string) *slog.Logger {
 	return log
 }
 
+func setupDB(config ConfigDB) *sql.DB {
+
+	connStr := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		config.Host,
+		config.Port,
+		config.Username,
+		config.Password,
+		config.NameDB,
+	)
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
+	}
+
+	return db
+}
+
+type Song struct {
+	Group       string    `json:"group"`
+	Song        string    `json:"song"`
+	ReleaseDate time.Time `json:"release_date"`
+	Text        []string  `json:"text"`
+	Link        string    `json:"link"`
+}
+
+func GetSong(w http.ResponseWriter, r *http.Request) {
+}
+
+func CreateSong(w http.ResponseWriter, r *http.Request) {
+}
+
+func EditSong(w http.ResponseWriter, r *http.Request) {
+}
+
+func DeleteSong(w http.ResponseWriter, r *http.Request) {
+}
+
+func NewRouter() *http.ServeMux {
+	router := http.NewServeMux()
+
+	router.HandleFunc("/user", GetSong)
+	router.HandleFunc("/users/create", CreateSong)
+	router.HandleFunc("/users/edit", EditSong)
+	router.HandleFunc("/users/delete", DeleteSong)
+
+	return router
+}
+
+func startApp(config ConfigApp) {
+	router := NewRouter()
+
+	// log.Println("Starting server on :8080")
+	if err := http.ListenAndServe(":"+string(config.PortApp), router); err != nil {
+		log.Fatalf("Error starting server: %s", err)
+	}
+}
+
 func main() {
 
 	config, _ := LoadConfig("./../../configs/config.yaml")
 
 	fmt.Println(config)
 
-	// TODO логер
-
 	log := setupLogger(config.Env)
 	log.Info("Setup Logger")
 
-	// TODO connect db
+	db := setupDB(config.DB)
 
-	// TODO start app
+	startApp(config.App)
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
+
+	db.Close()
 }
