@@ -8,7 +8,6 @@ import (
 )
 
 type Song struct {
-	ID          int        `json:"id"`
 	Group       string     `json:"group"`
 	Song        string     `json:"song"`
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
@@ -39,6 +38,8 @@ func (s *SQLSongStore) SaveSong(group, songName string, releaseDate *time.Time, 
 	return err
 }
 
+// TODO implement pagination by couplets
+// TODO реализовать пагинацию по куплетам
 func (s *SQLSongStore) GetSong(group, songName string) (*Song, *uint, error) {
 	query := `SELECT id_song, group, song, release_date, text, link FROM tasks WHERE group = $1, song = $2`
 	row := s.DB.QueryRow(query, group, songName)
@@ -46,7 +47,6 @@ func (s *SQLSongStore) GetSong(group, songName string) (*Song, *uint, error) {
 	var song Song
 	var id uint
 	err := row.Scan(
-		id,
 		song.Group,
 		song.Song,
 		&song.ReleaseDate,
@@ -83,6 +83,9 @@ func (s *SQLSongStore) EditSong(id uint, group, songName string, releaseDate *ti
 		updates = append(updates, `song = $`+fmt.Sprint(len(args)+1))
 		args = append(args, songName)
 	}
+
+	// can be redone via the - switch construction
+	// можно переделать с конструкцией switch
 	if releaseDate != nil {
 		updates = append(updates, `release_date = $`+fmt.Sprint(len(args)+1))
 		args = append(args, *releaseDate)

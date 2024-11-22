@@ -21,7 +21,8 @@ func (s *SongService) GetSong(group, song string) (*store.Song, *uint, error) {
 func (s *SongService) DeleteSong(group, song string) error {
 	_, id, err := s.SongStore.GetSong(group, song)
 	if err != nil {
-		return fmt.Errorf("The song was not found")
+		return fmt.Errorf("the song was not found")
+		// TODO change the logging implementation
 		// TODO изменить реализацию логирования
 	}
 
@@ -31,10 +32,10 @@ func (s *SongService) DeleteSong(group, song string) error {
 func (s *SongService) EditSong(group, song string, releaseDate *time.Time, text, link *string) error {
 	_, id, err := s.SongStore.GetSong(group, song)
 	if err != nil {
-		return fmt.Errorf("The song was not found")
+		return fmt.Errorf("the song was not found")
+		// TODO change the logging implementation
 		// TODO изменить реализацию логирования
 	}
 
 	return s.SongStore.EditSong(*id, group, song, releaseDate, text, link)
-
 }

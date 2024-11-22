@@ -1,15 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"database/sql"
 
@@ -93,66 +89,6 @@ func setupDB(config ConfigDB) *sql.DB {
 	return db
 }
 
-type Song struct {
-	Group       string    `json:"group"`
-	Song        string    `json:"song"`
-	ReleaseDate time.Time `json:"release_date,omitempty"`
-	Text        []string  `json:"text,omitempty"`
-	Link        string    `json:"link,omitempty"`
-}
-
-func GetSong(w http.ResponseWriter, r *http.Request) {
-}
-
-func CreateSong(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var newSong Song
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&newSong); err != nil {
-		http.Error(w, "Incorrect JSON", http.StatusBadRequest)
-		return
-	}
-
-	if newSong.Group == "" || newSong.Song == "" {
-		http.Error(w, "Required fields are missing: Group or Song", http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	response := map[string]string{"message": "The song was created successfully"}
-	json.NewEncoder(w).Encode(response)
-}
-
-func EditSong(w http.ResponseWriter, r *http.Request) {
-}
-
-func DeleteSong(w http.ResponseWriter, r *http.Request) {
-}
-
-func NewRouter() *http.ServeMux {
-	router := http.NewServeMux()
-
-	router.HandleFunc("/user", GetSong)
-	router.HandleFunc("/users/create", CreateSong)
-	router.HandleFunc("/users/edit", EditSong)
-	router.HandleFunc("/users/delete", DeleteSong)
-
-	return router
-}
-
-func startApp(config ConfigApp) {
-	router := NewRouter()
-
-	// log.Println("Starting server on :8080")
-	if err := http.ListenAndServe(":"+string(config.PortApp), router); err != nil {
-		log.Fatalf("Error starting server: %s", err)
-	}
-}
-
 func main() {
 
 	config, _ := LoadConfig("./../../configs/config.yaml")
@@ -164,7 +100,8 @@ func main() {
 
 	db := setupDB(config.DB)
 
-	startApp(config.App)
+	// TODO starting the server
+	// TODO запуск сервера
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
