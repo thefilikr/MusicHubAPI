@@ -14,5 +14,4 @@ COPY . .
 RUN go build -o main ./cmd/app/main.go
 
 EXPOSE 5678
-CMD ["goose", "-dir", "./migrations", "postgres", "'postgresql://admin:admin@localhost:5432/song?sslmode=disable'", "up"]
 CMD ["./main"]
