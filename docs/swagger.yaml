@@ -1,0 +1,153 @@
+definitions:
+  handler.Song:
+    description: Details about a song
+    properties:
+      group:
+        example: The Beatles
+        type: string
+      link:
+        example: https://example.com/song
+        type: string
+      release_date:
+        example: "1968-08-26"
+        type: string
+      song:
+        example: Hey Jude
+        type: string
+      text:
+        items:
+          type: string
+        type: array
+    type: object
+info:
+  contact: {}
+paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new song with all required fields
+      parameters:
+      - description: Song object
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/handler.Song'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "500":
+          description: Failed to create song
+          schema:
+            type: string
+      summary: Create a new song
+      tags:
+      - song
+  /delete:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes information about the song by name and group name.
+      parameters:
+      - description: Name of the group
+        in: query
+        name: group
+        required: true
+        type: string
+      - description: The name of the song
+        in: query
+        name: song
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Song successfully deleted
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Delete information about a song.
+      tags:
+      - song
+  /edit:
+    put:
+      consumes:
+      - application/json
+      description: Changes the information about the song by name and group name.
+      parameters:
+      - description: Song object
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/handler.Song'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Song successfully changed
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Change the information about the song.
+      tags:
+      - song
+  /info:
+    get:
+      consumes:
+      - application/json
+      description: Returns information about the song by name and group name.
+      parameters:
+      - description: Name of the group
+        in: query
+        name: group
+        required: true
+        type: string
+      - description: The name of the song
+        in: query
+        name: song
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Song object
+          schema:
+            $ref: '#/definitions/handler.Song'
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get information about the song.
+      tags:
+      - song
+swagger: "2.0"

@@ -1,0 +1,9 @@
+env: # local or prod
+app:
+  port_app: 
+db:
+  host_db: 
+  port_db: 
+  username_db: 
+  password_db: 
+  name_db:
