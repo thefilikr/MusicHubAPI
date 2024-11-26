@@ -91,6 +91,8 @@ func (h *SongHandler) CreateSongHandler(w http.ResponseWriter, r *http.Request) 
 // @Produce json
 // @Param group query string true "Name of the group"
 // @Param song query string true "The name of the song"
+// @Param countVerses query int false "Number of verses to return"
+// @Param numPage query int false "Page number for pagination"
 // @Success 200 {object} Song "Song object"
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
@@ -109,15 +111,15 @@ func (h *SongHandler) GetSongHandler(w http.ResponseWriter, r *http.Request) {
 	groupName := r.URL.Query().Get("group")
 	songName := r.URL.Query().Get("song")
 
+	countVerses := r.URL.Query().Get("countVerses")
+	numPage := r.URL.Query().Get("numPage")
+
 	if err := checkRequiredFields(groupName, songName); err != nil {
 		http.Error(w, "Missing song Group or name song", http.StatusBadRequest)
 		return
 	}
 
 	h.Log.Debug("Successful check required fields")
-
-	countVerses := r.URL.Query().Get("countVerses")
-	numPage := r.URL.Query().Get("numPage")
 
 	song, err := h.SongService.GetSong(groupName, songName, countVerses, numPage)
 

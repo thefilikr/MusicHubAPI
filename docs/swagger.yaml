@@ -132,6 +132,14 @@ paths:
         name: song
         required: true
         type: string
+      - description: Number of verses to return
+        in: query
+        name: countVerses
+        type: integer
+      - description: Page number for pagination
+        in: query
+        name: numPage
+        type: integer
       produces:
       - application/json
       responses:
