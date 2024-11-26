@@ -50,7 +50,7 @@ func checkRequiredFields(group, song string) error {
 // @Success 201 {string} string "Created"
 // @Failure 400 {string} string "Invalid request payload"
 // @Failure 500 {string} string "Failed to create song"
-// @Router /create [post]
+// @Router /song/create [post]
 func (h *SongHandler) CreateSongHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.Log.Info("Request create song")
@@ -76,7 +76,7 @@ func (h *SongHandler) CreateSongHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.Log.Debug("Successful check Required Fields")
 
-	if err := h.SongService.CreateSong(song.Group, song.Song, song.ReleaseDate, song.Text, song.Link); err != nil {
+	if err := h.SongService.CreateSong(song.Group, song.Song, song.ReleaseDate, song.Link, song.Text); err != nil {
 		http.Error(w, "Failed to create song", http.StatusInternalServerError)
 		return
 	}
@@ -94,7 +94,7 @@ func (h *SongHandler) CreateSongHandler(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} Song "Song object"
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
-// @Router /info [get]
+// @Router /song/info [get]
 func (h *SongHandler) GetSongHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.Log.Info("Request get song")
@@ -130,6 +130,44 @@ func (h *SongHandler) GetSongHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(song)
 }
 
+// @Short Description - Getting songs by filters
+// @Description Returns songs by filters.
+// @Tags song
+// @Accept json
+// @Produce json
+// @Param song body Song true "Song object"
+// @Success 200 {array} Song "Array of Song objects"
+// @Failure 400 {string} string "Bad request"
+// @Failure 500 {string} string "Internal server error"
+// @Router /songs [get]
+func (h *SongHandler) GetSongsHandler(w http.ResponseWriter, r *http.Request) {
+
+	h.Log.Info("Request get songs")
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	song, err := encodeSongJSON(r.Body)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	h.Log.Debug("Successful encode JSON song")
+
+	songs, err := h.SongService.GetSongs(&song.Group, &song.Song, song.ReleaseDate, song.Link, song.Text)
+
+	if err != nil {
+		http.Error(w, "Failed get song", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(songs)
+}
+
 // @Summary Delete information about a song.
 // @Description Deletes information about the song by name and group name.
 // @Tags song
@@ -140,7 +178,7 @@ func (h *SongHandler) GetSongHandler(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string "Song successfully deleted"
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
-// @Router /delete [delete]
+// @Router /song/delete [delete]
 func (h *SongHandler) DeleteSongHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.Log.Info("Request delete song")
@@ -184,7 +222,7 @@ func (h *SongHandler) DeleteSongHandler(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {string} string "Song successfully changed"
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
-// @Router /edit [put]
+// @Router /song/edit [put]
 func (h *SongHandler) EditSongHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.Log.Info("Request edit song")
@@ -211,7 +249,7 @@ func (h *SongHandler) EditSongHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.Log.Debug("Successful check required fields")
 
-	if err := h.SongService.EditSong(song.Group, song.Song, song.ReleaseDate, song.Text, song.Link); err != nil {
+	if err := h.SongService.EditSong(song.Group, song.Song, song.ReleaseDate, song.Link, song.Text); err != nil {
 		h.Log.Debug("Failed edit song: ", err.Error())
 		http.Error(w, "Failed edit song", http.StatusInternalServerError)
 		return

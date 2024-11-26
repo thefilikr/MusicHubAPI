@@ -33,7 +33,8 @@ func SetupApp(db *sql.DB, log *slog.Logger, port uint) {
 
 	log.Debug("Init layer handler")
 
-	http.HandleFunc("/song", songHandler.GetSongHandler)
+	http.HandleFunc("/songs", songHandler.GetSongsHandler)
+	http.HandleFunc("/song/info", songHandler.GetSongHandler)
 	http.HandleFunc("/song/create", songHandler.CreateSongHandler)
 	http.HandleFunc("/song/delete", songHandler.DeleteSongHandler)
 	http.HandleFunc("/song/edit", songHandler.EditSongHandler)

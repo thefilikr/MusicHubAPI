@@ -18,11 +18,12 @@ type Song struct {
 }
 
 type SongStore interface {
-	CreateSong(group, song string, releaseDate *string, text *[]string, link *string) error
+	CreateSong(group, song string, releaseDate, link *string, text *[]string) error
 	GetSong(group, songName, countVerses, numPage string) (*Song, error)
+	GetSongs(group, songName, releaseDate, link *string, text *[]string) (*[]Song, error)
 	GetIDSong(group, songName string) (*uint, error)
 	DeleteSong(id uint) error
-	EditSong(id uint, group, song string, releaseDate *string, text *[]string, link *string) error
+	EditSong(id uint, group, song string, releaseDate, link *string, text *[]string) error
 }
 
 type SQLSongStore struct {
@@ -30,7 +31,7 @@ type SQLSongStore struct {
 	Log *slog.Logger
 }
 
-func (s *SQLSongStore) CreateSong(group, songName string, releaseDate *string, text *[]string, link *string) error {
+func (s *SQLSongStore) CreateSong(group, songName string, releaseDate, link *string, text *[]string) error {
 	query := `
 		INSERT INTO songs (group_name, song, release_date, link) 
 		VALUES ($1, $2, 
@@ -102,6 +103,113 @@ func (s *SQLSongStore) GetSong(group, songName, countVerses, numPage string) (*S
 	return &song, nil
 }
 
+func (s *SQLSongStore) GetSongs(group, songName, releaseDate, link *string, text *[]string) (*[]Song, error) {
+
+	var songs []Song
+
+	query := `SELECT DISTINCT s.id_song FROM songs s LEFT JOIN verses v ON s.id_song = v.song_id WHERE `
+	var args []interface{}
+	var updates []string
+
+	if group != nil {
+		updates = append(updates, `s.group_name = $`+fmt.Sprint(len(args)+1))
+		args = append(args, *group)
+	}
+	if songName != nil {
+		updates = append(updates, `s.song = $`+fmt.Sprint(len(args)+1))
+		args = append(args, *songName)
+	}
+	if releaseDate != nil {
+		updates = append(updates, `s.release_date = $`+fmt.Sprint(len(args)+1))
+		args = append(args, *releaseDate)
+	}
+	if link != nil {
+		updates = append(updates, `s.link = $`+fmt.Sprint(len(args)+1))
+		args = append(args, *link)
+	}
+
+	if text != nil {
+		for _, verse := range *text {
+			updates = append(updates, "v.text_verses LIKE '%' || $"+fmt.Sprint(len(args)+1)+" || '%' ")
+			args = append(args, verse)
+		}
+	}
+
+	if len(updates) == 0 {
+		return nil, fmt.Errorf("not data")
+	}
+
+	query += strings.Join(updates, " OR ")
+
+	s.Log.Debug("Quere: ", query)
+	s.Log.Debug("Updates: ", updates)
+	s.Log.Debug("Args: ", args)
+
+	rows, err := s.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("error when executing the request: %w", err)
+	}
+
+	var ids []uint
+	for rows.Next() {
+		var id uint
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("error reading the string: %w", err)
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error when traversing lines: %w", err)
+	}
+
+	rows.Close()
+
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query = `SELECT song, group_name, release_date, link FROM songs WHERE id_song = $1`
+	for _, id := range ids {
+		row := s.DB.QueryRow(query, id)
+
+		var song Song
+		if err := row.Scan(
+			&song.Song,
+			&song.Group,
+			&song.ReleaseDate,
+			&song.Link,
+		); err != nil {
+			s.Log.Error(err.Error())
+			if err == sql.ErrNoRows {
+				s.Log.Error("Failed get song", sql.ErrNoRows.Error())
+				return &songs, nil
+			}
+			return nil, err
+		}
+
+		s.Log.Debug("Successful get song")
+
+		verses, err := s.GetVerses(id)
+		if err != nil {
+			s.Log.Debug("Failed get verses: ", err.Error())
+			return &songs, err
+		}
+
+		song.Text = &verses
+		s.Log.Debug("Successful get verses")
+
+		songs = append(songs, song)
+
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error when traversing lines: %w", err)
+	}
+
+	return &songs, nil
+}
+
 func (s *SQLSongStore) GetIDSong(group, songName string) (*uint, error) {
 	query := `SELECT id_song FROM songs WHERE group_name = $1 AND song = $2`
 	row := s.DB.QueryRow(query, group, songName)
@@ -126,7 +234,7 @@ func (s *SQLSongStore) DeleteSong(id uint) error {
 	return err
 }
 
-func (s *SQLSongStore) EditSong(id uint, group, songName string, releaseDate *string, text *[]string, link *string) error {
+func (s *SQLSongStore) EditSong(id uint, group, songName string, releaseDate, link *string, text *[]string) error {
 	query := `UPDATE songs SET `
 	var args []interface{}
 	var updates []string
@@ -197,7 +305,7 @@ func (s *SQLSongStore) GetVerses(id uint) ([]string, error) {
 	query := `SELECT text_verses FROM verses WHERE song_id = $1 ORDER BY verses_num ASC`
 	rows, err := s.DB.Query(query, id)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при выполнении запроса: %w", err)
+		return nil, fmt.Errorf("error when executing the request: %w", err)
 	}
 	defer rows.Close()
 
@@ -206,7 +314,7 @@ func (s *SQLSongStore) GetVerses(id uint) ([]string, error) {
 	for rows.Next() {
 		var verse string
 		if err := rows.Scan(&verse); err != nil {
-			return nil, fmt.Errorf("ошибка при считывании строки: %w", err)
+			return nil, fmt.Errorf("error reading the string: %w", err)
 		}
 
 		verses = append(verses, verse)
@@ -214,7 +322,7 @@ func (s *SQLSongStore) GetVerses(id uint) ([]string, error) {
 
 	// Проверяем на ошибки после обхода строк
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("ошибка при обходе строк: %w", err)
+		return nil, fmt.Errorf("error when traversing lines: %w", err)
 	}
 
 	return verses, nil

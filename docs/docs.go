@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/create": {
+        "/song/create": {
             "post": {
                 "description": "Create a new song with all required fields",
                 "consumes": [
@@ -61,7 +61,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/delete": {
+        "/song/delete": {
             "delete": {
                 "description": "Deletes information about the song by name and group name.",
                 "consumes": [
@@ -112,7 +112,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/edit": {
+        "/song/edit": {
             "put": {
                 "description": "Changes the information about the song by name and group name.",
                 "consumes": [
@@ -158,7 +158,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/info": {
+        "/song/info": {
             "get": {
                 "description": "Returns information about the song by name and group name.",
                 "consumes": [
@@ -192,6 +192,54 @@ const docTemplate = `{
                         "description": "Song object",
                         "schema": {
                             "$ref": "#/definitions/handler.Song"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/songs": {
+            "get": {
+                "description": "Returns songs by filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "song"
+                ],
+                "parameters": [
+                    {
+                        "description": "Song object",
+                        "name": "song",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.Song"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of Song objects",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.Song"
+                            }
                         }
                     },
                     "400": {
